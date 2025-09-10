@@ -17,10 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-cq9i+%=^3bx@2f)*q^o$^dkt%q(&^=i$jje-g2m3tc!@2#ug=j"
+# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -32,8 +29,7 @@ import environ
 env = environ.Env()
 environ.Env.read_env()  # reads .env file
 
-SECRET_KEY = env("SECRET_KEY")
-DEBUG = env.bool("DEBUG", default=False)
+SECRET_KEY ="@b(kgk3s_k0ss7j^r)(au_7x-2o&_#il-+eb4x@m#dr#k-&teq"
 
 
 # Application definition
@@ -265,7 +261,7 @@ CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = "UTC"
+CELERY_TIMEZONE = "Asia/Kolkata"
 
 # Logging
 LOGGING = {
