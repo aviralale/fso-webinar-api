@@ -1,0 +1,29 @@
+REGISTRATION CONFIRMED!
+
+Dear {{ user_name }},
+
+Thank you for registering! Your spot is confirmed for the upcoming webinar.
+
+WEBINAR DETAILS:
+Title: {{ webinar_title }}
+Date & Time: {{ start_time|date:"F j, Y" }} at {{ start_time|time:"g:i A" }}
+Duration: {{ duration }} minutes
+Host: {{ host_name }}
+{% if price > 0 %}Amount Paid: ₹{{ price }}{% else %}Price: FREE{% endif %}
+{% if platform %}Platform: {{ platform }}{% endif %}
+{% if webinar_link %}Join Link: {{ webinar_link }}{% endif %}
+
+DESCRIPTION:
+{{ webinar_description }}
+
+WHAT'S NEXT:
+- We'll send you a reminder 24 hours before the webinar
+- You'll receive another reminder 1 hour before it starts
+- Join the webinar using the link provided above
+
+If you have any questions, please don't hesitate to contact us.
+
+Looking forward to seeing you at the webinar!
+
+---
+This is an automated email. Please do not reply.

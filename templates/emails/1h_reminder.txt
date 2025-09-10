@@ -1,0 +1,12 @@
+STARTING IN 1 HOUR!
+
+Dear {{ user_name }},
+
+⚡ Final Reminder! Your webinar starts in approximately 1 hour. Get ready to join!
+
+WEBINAR DETAILS:
+Title: {{ webinar_title }}
+Starting: {{ start_time|date:"F j, Y" }} at {{ start_time|time:"g:i A" }}
+Duration: {{ duration }} minutes
+Host: {{ host_name }}
+{% if platform %}Platform: {{ platform }}{% endif %}

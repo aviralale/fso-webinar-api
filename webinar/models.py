@@ -17,6 +17,8 @@ class Webinar(models.Model):
         limit_choices_to={"role": "host"},
         related_name="hosted_webinars",
     )
+    link = models.URLField(blank=True, null=True)
+    platform = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -44,9 +46,20 @@ class Registration(models.Model):
         ("failed", "Failed"),
     ]
 
+    # For authenticated users
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="registrations"
+        User,
+        on_delete=models.CASCADE,
+        related_name="registrations",
+        null=True,  # Allow null for anonymous registrations
+        blank=True,
     )
+
+    # For anonymous/guest users
+    guest_email = models.EmailField(null=True, blank=True)
+    guest_name = models.CharField(max_length=200, null=True, blank=True)
+    guest_phone = models.CharField(max_length=20, null=True, blank=True)
+
     webinar = models.ForeignKey(
         Webinar, on_delete=models.CASCADE, related_name="registrations"
     )
@@ -58,9 +71,51 @@ class Registration(models.Model):
     razorpay_signature = models.CharField(max_length=200, blank=True, null=True)
     registered_at = models.DateTimeField(auto_now_add=True)
 
+    # Email reminder tracking
+    reminder_24h_sent = models.BooleanField(default=False)
+    reminder_1h_sent = models.BooleanField(default=False)
+    starting_notification_sent = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
-        unique_together = ["user", "webinar"]
+        # Remove the unique constraint on user+webinar since user can be null
+        # Add a custom constraint to handle both authenticated and anonymous users
         ordering = ["-registered_at"]
 
     def __str__(self):
-        return f"{self.user.username} - {self.webinar.title}"
+        if self.user:
+            return f"{self.user.username} - {self.webinar.title}"
+        else:
+            return f"{self.guest_email} - {self.webinar.title}"
+
+    @property
+    def attendee_name(self):
+        """Get the attendee name regardless of whether it's a user or guest"""
+        if self.user:
+            return self.user.get_full_name() or self.user.username
+        else:
+            return self.guest_name
+
+    @property
+    def attendee_email(self):
+        """Get the attendee email regardless of whether it's a user or guest"""
+        if self.user:
+            return self.user.email
+        else:
+            return self.guest_email
+
+    def clean(self):
+        """Custom validation to ensure either user or guest details are provided"""
+        from django.core.exceptions import ValidationError
+
+        if not self.user and not self.guest_email:
+            raise ValidationError("Either user or guest_email must be provided")
+
+        if self.user and self.guest_email:
+            raise ValidationError("Cannot have both user and guest details")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)

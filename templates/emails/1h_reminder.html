@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Starting Soon - 1 Hour to Go!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #F44336;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 20px;
+            background: #f9f9f9;
+        }
+
+        .webinar-details {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        .button {
+            background: #F44336;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .urgent-box {
+            background: #ffebee;
+            border: 2px solid #F44336;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 Starting in 1 Hour!</h1>
+        </div>
+
+        <div class="content">
+            <p>Dear {{ user_name }},</p>
+
+            <div class="urgent-box">
+                <h3>⚡ Final Reminder!</h3>
+                <p>Your webinar starts in approximately 1 hour. Get ready to join!</p>
+            </div>
+
+            <div class="webinar-details">
+                <h3>{{ webinar_title }}</h3>
+                <p><strong>📅 Starting:</strong> {{ start_time|date:"F j, Y" }} at {{ start_time|time:"g:i A" }}</p>
+                <p><strong>⏱️ Duration:</strong> {{ duration }} minutes</p>
+                <p><strong>👨‍🏫 Host:</strong> {{ host_name }}</p>
+                {% if platform %}
+                <p><strong>💻 Platform:</strong> {{ platform }}</p>
+                {% endif %}
+            </div>
+
+            {% if webinar_link %}
+            <div style="text-align: center; margin: 20px 0; background: #e8f5e8; padding: 20px; border-radius: 5px;">
+                <h4>🚀 Ready to Join?</h4>
+                <a href="{{ webinar_link }}" class="button">JOIN WEBINAR NOW</a>
+                <p style="margin-top: 10px; font-size: 12px;">We recommend joining 5 minutes early</p>
+            </div>
+            {% endif %}
+
+            <p><strong>🔧 Last-minute checklist:</strong></p>
+            <ul>
+                <li>✅ Check your internet connection</li>
+                <li>✅ Close unnecessary applications</li>
+                <li>✅ Have your notebook ready</li>
+                <li>✅ Find a quiet environment</li>
+            </ul>
+
+            <p>Thank you for joining us today. We're excited to have you!</p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated email. Please do not reply.</p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-cq9i+%=^3bx@2f)*q^o$^dkt%q(&^=i$jje-g2m3tc!@2#ug=j
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 import environ
 
@@ -197,8 +197,8 @@ DJOSER = {
 }
 
 
-RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="your_razorpay_key_id")
-RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="your_razorpay_key_secret")
+RAZORPAY_KEY_ID = "rzp_test_RCBNLBEKrzStaZ"
+RAZORPAY_KEY_SECRET = "Fq43FQe5ul4pROPrEzP4necu"
 
 
 import os
@@ -248,3 +248,40 @@ LOGGING = {
 
 
 AUTH_USER_MODEL = "accounts.User"
+
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "fsopromotions@gmail.com"
+EMAIL_HOST_PASSWORD = "kfypryayqfkdkbxb"
+DEFAULT_FROM_EMAIL = "First Step Overseas Webinar"
+
+
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+
+# Logging
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "webinar_emails.log",
+        },
+    },
+    "loggers": {
+        "webinars.email_service": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": True,
+        },
+    },
+}

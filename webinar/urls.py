@@ -1,35 +1,44 @@
+# urls.py for webinar app
 from django.urls import path
-from .views import (
-    WebinarListCreateView,
-    WebinarDetailView,
-    RegisterWebinarView,
-    VerifyPaymentView,
-    DashboardView,
-    MyRegistrationsView,
-    WebinarAttendeesView,
-    cancel_registration,
-)
+from . import views
 
 urlpatterns = [
-    # Webinars
-    path("webinars/", WebinarListCreateView.as_view(), name="webinar-list-create"),
-    path("webinars/<int:pk>/", WebinarDetailView.as_view(), name="webinar-detail"),
-    # Registration
-    path("webinars/register/", RegisterWebinarView.as_view(), name="register-webinar"),
-    path("registrations/", MyRegistrationsView.as_view(), name="my-registrations"),
+    # Webinar management
     path(
-        "registrations/<int:registration_id>/cancel/",
-        cancel_registration,
-        name="cancel-registration",
+        "webinars/", views.WebinarListCreateView.as_view(), name="webinar-list-create"
     ),
-    # Attendees (host/admin only)
+    path(
+        "webinars/<int:pk>/", views.WebinarDetailView.as_view(), name="webinar-detail"
+    ),
+    # Registration (now supports anonymous users)
+    path(
+        "webinars/register/",
+        views.RegisterWebinarView.as_view(),
+        name="register-webinar",
+    ),
+    path("verify-payment/", views.VerifyPaymentView.as_view(), name="verify-payment"),
+    # Registration status check (for anonymous users)
+    path(
+        "registration-status/<int:registration_id>/",
+        views.check_registration_status,
+        name="check-registration-status",
+    ),
+    # User dashboard (requires authentication)
+    path("dashboard/", views.DashboardView.as_view(), name="dashboard"),
+    path(
+        "my-registrations/",
+        views.MyRegistrationsView.as_view(),
+        name="my-registrations",
+    ),
+    # Webinar management (requires authentication)
     path(
         "webinars/<int:webinar_id>/attendees/",
-        WebinarAttendeesView.as_view(),
+        views.WebinarAttendeesView.as_view(),
         name="webinar-attendees",
     ),
-    # Payments
-    path("payments/verify/", VerifyPaymentView.as_view(), name="verify-payment"),
-    # Dashboard
-    path("dashboard/", DashboardView.as_view(), name="dashboard"),
+    path(
+        "registrations/<int:registration_id>/cancel/",
+        views.cancel_registration,
+        name="cancel-registration",
+    ),
 ]

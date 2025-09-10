@@ -13,9 +13,12 @@ from .serializers import (
     WebinarListSerializer,
     RegistrationSerializer,
     PaymentVerificationSerializer,
+    AnonymousRegistrationSerializer,
 )
 from .permissions import IsAdminUser, IsAdminOrHostOwner
 from accounts.models import User
+from .email_service import WebinarEmailService
+
 
 # Initialize Razorpay client
 razorpay_client = razorpay.Client(
@@ -35,18 +38,23 @@ class WebinarListCreateView(generics.ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsAdminUser()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticatedOrAllowAny()]
 
     def get_queryset(self):
         queryset = Webinar.objects.all()
 
-        # Filter future webinars for attendees
-        if self.request.user.role == "attendee":
-            queryset = queryset.filter(start_time__gt=timezone.now())
+        # For authenticated users, apply role-based filtering
+        if self.request.user.is_authenticated:
+            # Filter future webinars for attendees
+            if self.request.user.role == "attendee":
+                queryset = queryset.filter(start_time__gt=timezone.now())
 
-        # Filter host's webinars
-        elif self.request.user.role == "host":
-            queryset = queryset.filter(host=self.request.user)
+            # Filter host's webinars
+            elif self.request.user.role == "host":
+                queryset = queryset.filter(host=self.request.user)
+        else:
+            # For anonymous users, show all future webinars
+            queryset = queryset.filter(start_time__gt=timezone.now())
 
         return queryset
 
@@ -54,28 +62,65 @@ class WebinarListCreateView(generics.ListCreateAPIView):
 class WebinarDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Webinar.objects.all()
     serializer_class = WebinarSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [
+        permissions.AllowAny
+    ]  # Allow anonymous access to view details
 
     def get_permissions(self):
         if self.request.method in ["PUT", "PATCH", "DELETE"]:
             return [IsAdminOrHostOwner()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
 
 class RegisterWebinarView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # Allow anonymous registration
 
     def post(self, request):
         try:
             webinar_id = request.data.get("webinar_id")
             webinar = Webinar.objects.get(id=webinar_id)
 
-            # Check if user is already registered
-            if Registration.objects.filter(user=request.user, webinar=webinar).exists():
-                return Response(
-                    {"error": "You are already registered for this webinar."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            # For anonymous users, collect registration details
+            if not request.user.is_authenticated:
+                # Use anonymous registration serializer to validate guest details
+                guest_serializer = AnonymousRegistrationSerializer(data=request.data)
+                if not guest_serializer.is_valid():
+                    return Response(
+                        guest_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                guest_data = guest_serializer.validated_data
+                guest_email = guest_data["email"]
+                guest_name = guest_data["name"]
+                guest_phone = guest_data.get("phone", "")
+
+                # Check if someone with this email is already registered
+                existing_registration = Registration.objects.filter(
+                    webinar=webinar, guest_email=guest_email
+                ).first()
+
+                if existing_registration:
+                    return Response(
+                        {
+                            "error": "Someone with this email is already registered for this webinar."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                user = None
+            else:
+                # Authenticated user registration
+                if Registration.objects.filter(
+                    user=request.user, webinar=webinar
+                ).exists():
+                    return Response(
+                        {"error": "You are already registered for this webinar."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                user = request.user
+                guest_email = None
+                guest_name = None
+                guest_phone = None
 
             # Check capacity
             if webinar.is_full:
@@ -92,7 +137,11 @@ class RegisterWebinarView(APIView):
 
             # Create registration
             registration = Registration.objects.create(
-                user=request.user, webinar=webinar
+                user=user,
+                webinar=webinar,
+                guest_email=guest_email,
+                guest_name=guest_name,
+                guest_phone=guest_phone,
             )
 
             # Handle payment
@@ -101,11 +150,12 @@ class RegisterWebinarView(APIView):
                 order_data = {
                     "amount": int(webinar.price * 100),  # Amount in paise
                     "currency": "INR",
-                    "receipt": f"webinar_{webinar.id}_user_{request.user.id}",
+                    "receipt": f"webinar_{webinar.id}_reg_{registration.id}",
                     "notes": {
                         "webinar_id": webinar.id,
-                        "user_id": request.user.id,
                         "registration_id": registration.id,
+                        "user_id": user.id if user else None,
+                        "guest_email": guest_email if guest_email else None,
                     },
                 }
 
@@ -131,9 +181,12 @@ class RegisterWebinarView(APIView):
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     )
             else:
-                # Free webinar - mark as successful
+                # Free webinar - mark as successful and send confirmation email
                 registration.payment_status = "success"
                 registration.save()
+
+                # Send registration confirmation email
+                WebinarEmailService.send_registration_confirmation(registration)
 
                 return Response(
                     {
@@ -154,7 +207,7 @@ class RegisterWebinarView(APIView):
 
 
 class VerifyPaymentView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # Allow anonymous payment verification
 
     def post(self, request):
         serializer = PaymentVerificationSerializer(data=request.data)
@@ -163,8 +216,15 @@ class VerifyPaymentView(APIView):
 
         try:
             registration = Registration.objects.get(
-                id=serializer.validated_data["registration_id"], user=request.user
+                id=serializer.validated_data["registration_id"]
             )
+
+            # For authenticated users, verify ownership
+            if request.user.is_authenticated and registration.user != request.user:
+                return Response(
+                    {"error": "Registration not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
             # Verify Razorpay signature
             params_dict = {
@@ -185,6 +245,9 @@ class VerifyPaymentView(APIView):
                     "razorpay_signature"
                 ]
                 registration.save()
+
+                # Send registration confirmation email
+                WebinarEmailService.send_registration_confirmation(registration)
 
                 return Response(
                     {
@@ -270,11 +333,20 @@ class DashboardView(APIView):
                 attendees = []
 
                 for reg in successful_registrations:
+                    # Handle both authenticated users and anonymous registrations
+                    if reg.user:
+                        attendee_name = reg.user.get_full_name()
+                        attendee_email = reg.user.email
+                    else:
+                        attendee_name = reg.guest_name
+                        attendee_email = reg.guest_email
+
                     attendees.append(
                         {
-                            "id": reg.user.id,
-                            "name": reg.user.get_full_name(),
-                            "email": reg.user.email,
+                            "id": reg.user.id if reg.user else None,
+                            "name": attendee_name,
+                            "email": attendee_email,
+                            "phone": reg.guest_phone if not reg.user else None,
                             "registered_at": reg.registered_at,
                         }
                     )
@@ -328,9 +400,15 @@ class DashboardView(APIView):
 
             recent_activity = []
             for reg in recent_registrations:
+                # Handle both authenticated users and anonymous registrations
+                if reg.user:
+                    user_name = reg.user.get_full_name()
+                else:
+                    user_name = f"{reg.guest_name} (Guest)"
+
                 recent_activity.append(
                     {
-                        "user": reg.user.get_full_name(),
+                        "user": user_name,
                         "webinar": reg.webinar.title,
                         "registered_at": reg.registered_at,
                         "amount": reg.webinar.price,
@@ -457,6 +535,35 @@ def cancel_registration(request, registration_id):
             return Response(
                 {"success": True, "message": "Registration cancelled successfully."}
             )
+
+    except Registration.DoesNotExist:
+        return Response(
+            {"error": "Registration not found."}, status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(["GET"])
+@permission_classes([permissions.AllowAny])
+def check_registration_status(request, registration_id):
+    """
+    Check registration status for anonymous users
+    """
+    try:
+        registration = Registration.objects.get(id=registration_id)
+
+        return Response(
+            {
+                "registration_id": registration.id,
+                "webinar_title": registration.webinar.title,
+                "payment_status": registration.payment_status,
+                "webinar_start_time": registration.webinar.start_time,
+                "webinar_link": (
+                    registration.webinar.link
+                    if registration.payment_status == "success"
+                    else None
+                ),
+            }
+        )
 
     except Registration.DoesNotExist:
         return Response(

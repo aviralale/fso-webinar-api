@@ -1,0 +1,29 @@
+REMINDER: WEBINAR TOMORROW!
+
+Dear {{ user_name }},
+
+🚀 Your webinar is starting tomorrow! Don't forget to mark your calendar and prepare to join.
+
+WEBINAR DETAILS:
+Title: {{ webinar_title }}
+Date & Time: {{ start_time|date:"F j, Y" }} at {{ start_time|time:"g:i A" }}
+Duration: {{ duration }} minutes
+Host: {{ host_name }}
+{% if platform %}Platform: {{ platform }}{% endif %}
+{% if webinar_link %}Join Link: {{ webinar_link }}{% endif %}
+
+DESCRIPTION:
+{{ webinar_description }}
+
+TO PREPARE FOR TOMORROW:
+- Ensure you have a stable internet connection
+- Test your audio and video if participation is required
+- Have a pen and paper ready for notes
+- Join a few minutes early to avoid any technical issues
+
+We'll send you one more reminder 1 hour before the webinar starts.
+
+See you tomorrow!
+
+---
+This is an automated email. Please do not reply.

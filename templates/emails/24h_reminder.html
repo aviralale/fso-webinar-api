@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Webinar Reminder - Tomorrow!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #FF9800;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 20px;
+            background: #f9f9f9;
+        }
+
+        .webinar-details {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        .button {
+            background: #FF9800;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .reminder-box {
+            background: #fff3e0;
+            border: 2px solid #FF9800;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ Reminder: Webinar Tomorrow!</h1>
+        </div>
+
+        <div class="content">
+            <p>Dear {{ user_name }},</p>
+
+            <div class="reminder-box">
+                <h3>🚀 Your webinar is starting tomorrow!</h3>
+                <p>Don't forget to mark your calendar and prepare to join.</p>
+            </div>
+
+            <div class="webinar-details">
+                <h3>{{ webinar_title }}</h3>
+                <p><strong>📅 Date & Time:</strong> {{ start_time|date:"F j, Y" }} at {{ start_time|time:"g:i A" }}</p>
+                <p><strong>⏱️ Duration:</strong> {{ duration }} minutes</p>
+                <p><strong>👨‍🏫 Host:</strong> {{ host_name }}</p>
+                {% if platform %}
+                <p><strong>💻 Platform:</strong> {{ platform }}</p>
+                {% endif %}
+                {% if webinar_link %}
+                <p><strong>🔗 Join Link:</strong> <a href="{{ webinar_link }}">Click here to join</a></p>
+                {% endif %}
+            </div>
+
+            <div style="background: white; padding: 15px; border-radius: 5px; border-left: 4px solid #4CAF50;">
+                <h4>📝 Quick Reminder:</h4>
+                <p>{{ webinar_description }}</p>
+            </div>
+
+            <p><strong>📋 To prepare for tomorrow:</strong></p>
+            <ul>
+                <li>Ensure you have a stable internet connection</li>
+                <li>Test your audio and video if participation is required</li>
+                <li>Have a pen and paper ready for notes</li>
+                <li>Join a few minutes early to avoid any technical issues</li>
+            </ul>
+
+            {% if webinar_link %}
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="{{ webinar_link }}" class="button">Join Webinar Tomorrow</a>
+            </div>
+            {% endif %}
+
+            <p>We'll send you one more reminder 1 hour before the webinar starts.</p>
+
+            <p>See you tomorrow!</p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated email. Please do not reply.</p>
+        </div>
+    </div>
+</body>
+
+</html>
